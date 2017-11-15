@@ -6,9 +6,14 @@ For the majority of the site, instead of using the kraken (v5 and below) or even
 
 GraphQL is very flexible since you can control exactly what fields are returned, and it can be linked to associations (e.g. Game -> Stream -> User) without having to make multiple calls. This document will be sparse and only show examples, and you may want to use resources online to find out more about querying GraphQL APIs.
 
+## IMPORTANT DISCLAIMER
+Please note that this API is currently not officialy sanctioned to be used by end consumers. Please refer to the [official Twitch Developers site](https://dev.twitch.tv) to see documentation on recommended uses of the API.
+
+This documentation and its maintainer has no affiliation or connection to Twitch Interactive, Inc., who owns the aformentioned API and its data.
+
 ## Making requests
 The endpoint for accessing the GraphQL API is **https://api.twitch.tv/gql**. This is the only URL to be used regardless of the operation. Requests are made using POST.
-As of this writing, no authentication is required, but if you're feeling adventeruous you may put your API key in the *Client-ID* header.
+As of November 14, 2017 sometime between 7 and 8pm EST, the API became unavailable for anonymous access. You must provide your api key in the *Client-ID* header at your own risk. (_Author's note_: my b)
 
 To test out the API, I recommend [Insomnia](https://insomnia.rest) which has some nice GraphQL support including schema autocomplete.
 
@@ -244,8 +249,3 @@ query {
   }
 }
 ````
-
-## Disclaimer
-Please note that this API is currently not officialy sanctioned to be used by end consumers. Please refer to the [official Twitch Developers site](https://dev.twitch.tv) to see documentation on recommended uses of the API.
-
-This documentation and its maintainer has no affiliation or connection to Twitch Interactive, Inc., who owns the aformentioned API and its data.
