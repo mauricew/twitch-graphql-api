@@ -1,7 +1,7 @@
 Twitch GraphQL API
 ======================
 
-The [new Twitch website](https://go.twitch.tv) (currently in beta), which replaces Ember with React on the frontend, also has a change in the way it pulls data for pages.
+When Twitch updated its frontend in 2017, it secretly showed signs of a new method of accessing the backend.
 For the majority of the site, instead of using the kraken (v5 and below) or even the helix ("new") REST API endpoints, it uses a completely separate API utilizing GraphQL.
 
 GraphQL is very flexible since you can control exactly what fields are returned, and it can be linked to associations (e.g. Game -> Stream -> User) without having to make multiple calls. This document will be sparse and only show examples, and you may want to use resources online to find out more about querying GraphQL APIs.
@@ -12,10 +12,10 @@ Please note that this API is currently not officialy sanctioned to be used by en
 This documentation and its maintainer has no affiliation or connection to Twitch Interactive, Inc., who owns the aformentioned API and its data.
 
 ## Making requests
-The endpoint for accessing the GraphQL API is **https://api.twitch.tv/gql**. This is the only URL to be used regardless of the operation. Requests are made using POST.
-As of November 14, 2017 sometime between 7 and 8pm EST, the API became unavailable for anonymous access. You must provide your api key in the *Client-ID* header at your own risk. (_Author's note_: my b)
+The single endpoint for accessing the GraphQL API is **https://gql.twitch.tv/gql**, proxied through Fastly (also https://api.twitch.tv/gql, and the entire subdomain is proxied through Akamai). Requests are made using POST.
+From the day the updated Twitch site went out of beta, it has required a *Client-ID* or a bearer token in the *Authorization* header, so use it at your own risk.
 
-To test out the API, I recommend [Insomnia](https://insomnia.rest) which has some nice GraphQL support including schema autocomplete.
+The GraphQL schema is public and can be accessed via introspection. To test out the API, I recommend [Insomnia](https://insomnia.rest) which has first-class support and autocomplete for GraphQL.
 
 ## Responses
 All responses will have a status code of 200, even when there are errors. The body will be a either a JSON object if one call is made, or array if several are.
@@ -23,6 +23,54 @@ All responses will have a status code of 200, even when there are errors. The bo
 * **data** an object containing the data requested,
 * **errors** an array if there was an error with the request,
 * **extensions** an object containing metadata about the request. Always includes time taken. If a custom query is passed, it will have the original operation name, and any variables passed. (Custom queries are outside the scope of this document)
+
+## Uncommon tasks
+I listed this section because of the slow development progress of the Helix API.
+
+### Game
+You can get current viewers, total followers, and top clips/videos.
+
+````
+query { 
+  game(name: "IRL") {
+    name
+    followersCount
+    viewersCount
+    clips(criteria: { period: LAST_MONTH }) {
+      edges {
+        node {
+          id
+          title
+          viewCount
+          createdAt
+          durationSeconds
+          curator {
+            login
+          }
+          broadcaster {
+            login
+          }
+        }
+      }
+    }
+    videos(sort: VIEWS) {
+      edges {
+        node {
+          id
+          creator {
+            login
+          }
+          title
+          viewCount
+          createdAt
+          lengthSeconds
+          broadcastType
+        }
+      }
+    }
+  }
+}
+````
 
 ## Common Tasks
 ### User
