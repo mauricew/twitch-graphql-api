@@ -24,10 +24,116 @@ All responses will have a status code of 200, even when there are errors. The bo
 * **errors** an array if there was an error with the request,
 * **extensions** an object containing metadata about the request. Always includes time taken. If a custom query is passed, it will have the original operation name, and any variables passed. (Custom queries are outside the scope of this document)
 
-## Uncommon tasks
-I listed this section because of the slow development progress of the Helix API.
+## Helix unimplemented examples
+
+### User
+#### Get subscriptions and emotes
+````
+query {	
+  user(login: "day9tv") {
+    subscriptionProducts {
+      id
+      name
+      displayName
+      price
+      tier
+      hasAdFree
+      hasFastChat
+      hasSubOnlyChat
+      hasSubonlyVideoArchive
+      interval {
+        duration
+        unit
+      }
+      emoteSetID
+      emotes {
+        id
+        state
+        text
+        token
+      }
+    }
+  }
+}
+````
+#### Get cheer badges and cheermotes
+**ProTip** Badges can actually go up to 5 million!
+````
+query {
+  user(login: "overwatchleague") {
+    cheer {
+      availableBadges {
+        title
+        description
+        clickURL
+        imageURL
+      }
+      emotes {
+        id
+        prefix
+        type
+        tiers {
+          bits
+          images {
+            id
+            theme
+            isAnimated
+            dpiScale
+            url
+          }
+        }
+      }
+    }
+  }
+}
+````
+#### View chat mods
+````
+query {
+  user(login: "forsen") {
+     mods {
+      edges {
+        node {
+          login
+        }
+      }
+    }
+  }
+}
+````
+### Games/Directory listing
+#### List top games *and* their top streamers
+You can also do communities or creative-specific communitiies.
+````
+query {
+  directories(filterBy: GAMES) {
+    edges {
+      node {
+        id
+        name
+        broadcastersCount
+        viewersCount
+        streams {
+          edges {
+            node {
+              broadcaster {
+                login
+              }
+              viewersCount
+            }
+          }
+        }
+      }
+    }
+  }
+}
+````
+
+
+## Other common Tasks
 
 ### Game
+#### Clips and videos
 You can get current viewers, total followers, and top clips/videos.
 
 ````
@@ -71,8 +177,6 @@ query {
   }
 }
 ````
-
-## Common Tasks
 ### User
 #### Getting a single user
 
