@@ -4,7 +4,8 @@ Twitch GraphQL API
 When Twitch updated its frontend in 2017, it secretly showed signs of a new method of accessing the backend.
 For the majority of the site, instead of using the kraken (v5 and below) or even the helix ("new") REST API endpoints, it uses a completely separate API utilizing GraphQL.
 
-GraphQL is very flexible since you can control exactly what fields are returned, and it can be linked to associations (e.g. Game -> Stream -> User) without having to make multiple calls. This document will be sparse and only show examples, and you may want to use resources online to find out more about querying GraphQL APIs.
+GraphQL is very flexible since you can control exactly what fields are returned, and it can be linked to associations (e.g. Game -> Stream -> User) without having to make multiple calls.
+This document will be sparse and only show basic access instructions and examples, so you may want to use resources online to find out more about querying GraphQL APIs.
 
 ## IMPORTANT DISCLAIMER
 Please note that this API is currently not officialy sanctioned to be used by end consumers. Please refer to the [official Twitch Developers site](https://dev.twitch.tv) to see documentation on recommended uses of the API.
@@ -12,133 +13,34 @@ Please note that this API is currently not officialy sanctioned to be used by en
 This documentation and its maintainer has no affiliation or connection to Twitch Interactive, Inc., who owns the aformentioned API and its data.
 
 ## Making requests
-The single endpoint for accessing the GraphQL API is **https://gql.twitch.tv/gql**, proxied through Fastly (also https://api.twitch.tv/gql, and the entire subdomain is proxied through Akamai). Requests are made using POST.
-From the day the updated Twitch site went out of beta, it has required a *Client-ID* or a bearer token in the *Authorization* header, so use it at your own risk.
+POST your request in JSON format to **https://gql.twitch.tv/gql**.  
+You may also note that https://api.twitch.tv/gql works the exact same way, and is hosted through the same proxy as Twitch's other APIs.
 
-The GraphQL schema is public and can be accessed via introspection. To test out the API, I recommend [Insomnia](https://insomnia.rest) which has first-class support and autocomplete for GraphQL.
+### Authorization
+From the day the updated Twitch site went out of beta, it has required a *Client-ID* or a bearer token in the *Authorization* header.  
+This being an unsupported API means that 1) You are using this at your own risk, and 2) Twitch can (and will) detect this usage tied back to your account. However, you can use the Client ID of a logged out user just fine.  
 
-## Responses
+### Responses
 All responses will have a status code of 200, even when there are errors. The body will be a either a JSON object if one call is made, or array if several are.
 
 * **data** an object containing the data requested,
 * **errors** an array if there was an error with the request,
 * **extensions** an object containing metadata about the request. Always includes time taken. If a custom query is passed, it will have the original operation name, and any variables passed. (Custom queries are outside the scope of this document)
 
-## Helix unimplemented examples
+## Limitations made for 2019 and beyond
+Sometime towards the end of 2018, there were limitations placed on the API:
+* The GraphQL schema required authentication.
+* Client IDs were restricted, so almost any token created via the Glass dev management portal will probably no longer work.
+* It was made known via private channels that the use of this API when tied back to you may lead to consequences. (via cbnenni on twitter)
 
-### User
-#### Get subscriptions and emotes
-````
-query {	
-  user(login: "day9tv") {
-    subscriptionProducts {
-      id
-      name
-      displayName
-      price
-      tier
-      hasAdFree
-      hasFastChat
-      hasSubOnlyChat
-      hasSubonlyVideoArchive
-      interval {
-        duration
-        unit
-      }
-      emoteSetID
-      emotes {
-        id
-        state
-        text
-        token
-      }
-    }
-  }
-}
-````
-#### Get cheer badges and cheermotes
-**ProTip** Badges can actually go up to 5 million!
-````
-query {
-  user(login: "overwatchleague") {
-    cheer {
-      availableBadges {
-        title
-        description
-        clickURL
-        imageURL
-      }
-      emotes {
-        id
-        prefix
-        type
-        tiers {
-          bits
-          images {
-            id
-            theme
-            isAnimated
-            dpiScale
-            url
-          }
-        }
-      }
-    }
-  }
-}
-````
-#### View chat mods
-````
-query {
-  user(login: "forsen") {
-     mods {
-      edges {
-        node {
-          login
-        }
-      }
-    }
-  }
-}
-````
-### Games/Directory listing
-#### List top games *and* their top streamers
-You can also do communities or creative-specific communitiies.
-````
-query {
-  directories(filterBy: GAMES) {
-    edges {
-      node {
-        id
-        name
-        broadcastersCount
-        viewersCount
-        streams {
-          edges {
-            node {
-              broadcaster {
-                login
-              }
-              viewersCount
-            }
-          }
-        }
-      }
-    }
-  }
-}
-````
-
-
-## Other common Tasks
+## Common Tasks
 
 ### Game
 #### Clips and videos
-You can get current viewers, total followers, and top clips/videos.
-
+You can get current top clips/videos for a game, all at once!. 
 ````
 query { 
-  game(name: "IRL") {
+  game(name: "Apex Legends") {
     name
     followersCount
     viewersCount
@@ -177,7 +79,7 @@ query {
   }
 }
 ````
-### User
+### Users
 #### Getting a single user
 
 **Request body**
@@ -286,7 +188,7 @@ query {
 #### Find out who a user follows
 Same as above, except query *follows* instead of *followers*.
 
-### Stream
+### Streams
 #### Getting top live streams
 
 **Request body**
@@ -343,24 +245,26 @@ query {
   ]
 }
 ````
-### Game
+### Games
 #### Game metadata and top live streams
 **Request body**  
 (this shows that querying can be case insensitive)
 ````
 query {
-  game(name: "PlayerUnknown's Battlegrounds") {
+  game(name: "Teamfight Tactics") {
     id
     name
     streams(first: 50) {
       edges {
         node {
-          id
-          title
+          id          
           viewersCount
           broadcaster {
             id
             displayName
+            broadcastSettings {
+              title
+            }
           }
         }
       }
@@ -371,29 +275,33 @@ query {
 **Response body data**
 ````
 "game": {
-  "id": "493057",
-  "name": "PLAYERUNKNOWN'S BATTLEGROUNDS",
+  "id": "513143",
+  "name": "Teamfight Tactics",
   "streams": {
     "edges": [
       {
         "node": {
-          "id": "26321086528",
-          "title": "nice title Tim thanks guys",
-          "viewersCount": 17600,
+          "id": "35114804048",
+          "viewersCount": 19451,
           "broadcaster": {
-            "id": "36769016",
-            "displayName": "TimTheTatman"
+            "id": "87204022",
+            "displayName": "DisguisedToast",
+            "broadcastSettings": {
+              "title": "New Patch, New Exploits | In Canada"
+            }
           }
         }
       },
       {
         "node": {
-          "id": "26322034224",
-          "title": "🔴90% ( ͝° ͜ʖ͡°) [http://pubg-roll.ru/ - Рулетка PUBG]",
-          "viewersCount": 6778,
+          "id": "35115577920",
+          "viewersCount": 14713,
           "broadcaster": {
-            "id": "27115707",
-            "displayName": "Arthas"
+            "id": "44099416",
+            "displayName": "Rakin",
+            "broadcastSettings": {
+              "title": "TOP 10 BR - RANQUEADAS NA MAIN"
+            }
           }
         }
       }
@@ -401,3 +309,137 @@ query {
   }
 }
 ````
+
+## Advanced and unofficial tasks
+VoHiYo means nothing if you aren't given the right tools. Keep them accountable with these examples that don't have an official equivalent access method.
+
+### User
+#### Get subscription levels and emotes
+````
+query {	
+  user(login: "day9tv") {
+    subscriptionProducts {
+      id
+      name
+      displayName
+      price
+      tier
+      hasAdFree
+      hasFastChat
+      hasSubOnlyChat
+      hasSubonlyVideoArchive
+      interval {
+        duration
+        unit
+      }
+      emoteSetID
+      emotes {
+        id
+        state
+        text
+        token
+      }
+    }
+  }
+}
+````
+#### Get cheer badges and cheermotes
+````
+query {
+  user(login: "overwatchleague") {
+    cheer {
+      availableBadges {
+        title
+        description
+        clickURL
+        imageURL
+      }
+      emotes {
+        id
+        prefix
+        type
+        tiers {
+          bits
+          images {
+            id
+            theme
+            isAnimated
+            dpiScale
+            url
+          }
+        }
+      }
+    }
+  }
+}
+````
+#### View chat mods
+*Implemented June 2019 in Helix, but only with OAuth `moderator:read` permissions*
+````
+query {
+  user(login: "forsen") {
+     mods {
+      edges {
+        node {
+          login
+        }
+      }
+    }
+  }
+}
+````
+#### Find out some information about the stream video (if they're streaming)
+````
+query {
+  user(login: "zero") {
+    stream {
+      averageFPS
+      bitrate
+      broadcasterSoftware
+      codec
+      height
+      width
+    }
+  }
+}
+````
+### See who a user is hosting
+Only the current logged-in user can do the inverse.
+````
+query {
+  user(login: "rajjpatel") {
+    hosting {
+      login
+    }
+  }
+}
+````
+### Category (game) listing
+#### List top *and* their top streamers
+Since communities were dropped, use the below "GAMES" filter to ensure you are only getting the same categories as are listed in the directory
+
+````
+query {
+  directories(filterBy: GAMES) {
+    edges {
+      node {
+        id
+        name
+        broadcastersCount
+        viewersCount
+        streams {
+          edges {
+            node {
+              broadcaster {
+                login
+              }
+              viewersCount
+            }
+          }
+        }
+      }
+    }
+  }
+}
+````
+
